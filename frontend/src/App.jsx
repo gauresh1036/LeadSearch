@@ -3,7 +3,7 @@ import {
   Search, Moon, Sun, BookOpen, Menu, X, 
   MapPin, Briefcase, Users, ExternalLink, 
   Mail, MessageSquare, User, Lock, ArrowRight,
-  Github, Twitter, Linkedin, Send, Sparkles,
+  Send, Sparkles,
   Target, Eye, Navigation, ChevronLeft, ChevronRight,
   Cpu, Leaf, Landmark, HeartPulse, Palette
 } from 'lucide-react';
@@ -601,7 +601,7 @@ const App = () => {
               <p className="opacity-50 text-sm font-medium">Empowering career choices through data. <br/>Made with ❤️ for modern builders.</p>
             </div>
             <div className="flex space-x-6">
-              {[Twitter, Github, Linkedin].map((Icon, i) => (
+              {[MessageSquare, Globe, Mail].map((Icon, i) => (
                 <div key={i} className="w-12 h-12 rounded-full flex items-center justify-center border border-white/10 hover:bg-indigo-600 transition-all cursor-pointer"><Icon size={20} /></div>
               ))}
             </div>
