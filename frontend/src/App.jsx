@@ -3,7 +3,7 @@ import {
   Search, Moon, Sun, BookOpen, Menu, X, 
   MapPin, Briefcase, Users, ExternalLink, 
   Mail, MessageSquare, User, Lock, ArrowRight,
-  Send, Sparkles,
+  Send, Sparkles, Globe,
   Target, Eye, Navigation, ChevronLeft, ChevronRight,
   Cpu, Leaf, Landmark, HeartPulse, Palette
 } from 'lucide-react';
@@ -306,15 +306,52 @@ const Home = ({ theme }) => {
   const [locLoading, setLocLoading] = useState(false);
   const searchInputRef = useRef(null);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
+    if (!searchTerm.trim() && !city.trim()) {
+      alert("Please enter either an Industry or City.");
+      return;
+    }
+    
     setIsSearching(true);
-    setTimeout(() => {
-      setResults(DUMMY_COMPANIES.filter(c =>
-        (c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.industry.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        c.location.toLowerCase().includes(city.toLowerCase())
-      ));
+
+    try {
+      const params = new URLSearchParams({
+        location: city.trim(),
+        industry: searchTerm.trim()
+      });
+      
+      const response = await fetch(`http://localhost:8000/search?${params}`);
+      if (!response.ok) throw new Error("Apollo API Error");
+      
+      const data = await response.json();
+      const fetchedCompanies = data.results || [];
+      
+      const colorPalettes = [
+        "from-blue-500 to-cyan-400",
+        "from-emerald-500 to-teal-400", 
+        "from-purple-500 to-pink-400", 
+        "from-rose-500 to-orange-400",
+        "from-indigo-500 to-blue-400",
+        "from-amber-500 to-yellow-400"
+      ];
+      
+      const mapped = fetchedCompanies.map((c, idx) => ({
+        id: c.company_name + idx,
+        name: c.company_name,
+        industry: c.industry && c.industry !== 'N/A' ? c.industry : searchTerm || 'Technology',
+        location: c.location || city || 'Global',
+        employees: c.employee_count && c.employee_count !== 'N/A' ? c.employee_count : "Unknown",
+        website: c.company_website && c.company_website !== 'N/A' ? c.company_website : "#",
+        color: colorPalettes[idx % colorPalettes.length]
+      }));
+      
+      setResults(mapped);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to Python backend! Is localhost:8000 running?");
+    } finally {
       setIsSearching(false);
-    }, 800);
+    }
   };
 
   const onSelectDomain = (domainName) => {
