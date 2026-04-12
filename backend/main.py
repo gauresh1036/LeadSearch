@@ -1,13 +1,23 @@
 """
-FastAPI backend for Apollo.io Company Search.
-Accepts industry and city, queries Apollo API, and returns company results.
+FastAPI backend for Apollo.io Company Search + Auth.
+- /auth/signup  – register a new user
+- /auth/signin  – login and receive a JWT token
+- /search       – Apollo.io company search (existing)
 """
 
 import os
-from fastapi import FastAPI, Query, HTTPException
+import json
+from pathlib import Path
+from datetime import datetime, timedelta, timezone
+
+from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel, EmailStr
 import httpx
 from dotenv import load_dotenv
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,15 +35,117 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ------------------------------------------------------------------
+# Auth config
+# ------------------------------------------------------------------
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production-please")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/signin", auto_error=False)
+
+# Simple file-based user store (no DB required)
+USERS_FILE = Path(__file__).parent / "users.json"
+
+
+def _load_users() -> dict:
+    if USERS_FILE.exists():
+        return json.loads(USERS_FILE.read_text())
+    return {}
+
+
+def _save_users(users: dict):
+    USERS_FILE.write_text(json.dumps(users, indent=2))
+
+
+# ------------------------------------------------------------------
+# Pydantic models
+# ------------------------------------------------------------------
+class SignUpRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class SignInRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    name: str
+    email: str
+
+
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
+def _create_token(data: dict) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode({**data, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+
+
+# ------------------------------------------------------------------
 # Apollo.io API config
+# ------------------------------------------------------------------
 APOLLO_API_URL = "https://api.apollo.io/v1/mixed_people/search"
 APOLLO_API_KEY = os.getenv("APOLLO_API_KEY", "")
 
 
+# ------------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------------
 @app.get("/")
 def root():
     """Health-check endpoint."""
     return {"message": "Apollo Company Search API is running 🚀"}
+
+
+@app.post("/auth/signup", response_model=TokenResponse)
+def signup(body: SignUpRequest):
+    """Register a new user. Returns a JWT token on success."""
+    users = _load_users()
+
+    if body.email in users:
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+
+    if len(body.password) < 6:
+        raise HTTPException(status_code=422, detail="Password must be at least 6 characters.")
+
+    hashed = pwd_context.hash(body.password)
+    users[body.email] = {"name": body.name, "email": body.email, "hashed_password": hashed}
+    _save_users(users)
+
+    token = _create_token({"sub": body.email, "name": body.name})
+    return TokenResponse(access_token=token, name=body.name, email=body.email)
+
+
+@app.post("/auth/signin", response_model=TokenResponse)
+def signin(body: SignInRequest):
+    """Authenticate an existing user. Returns a JWT token on success."""
+    users = _load_users()
+    user = users.get(body.email)
+
+    if not user or not pwd_context.verify(body.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
+
+    token = _create_token({"sub": body.email, "name": user["name"]})
+    return TokenResponse(access_token=token, name=user["name"], email=body.email)
+
+
+@app.get("/auth/me")
+def me(token: str = Depends(oauth2_scheme)):
+    """Return the current user info from their JWT."""
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return {"name": payload.get("name"), "email": payload.get("sub")}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
 
 
 @app.get("/search")
