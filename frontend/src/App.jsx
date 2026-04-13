@@ -5,7 +5,7 @@ import {
   Mail, MessageSquare, User, Lock, ArrowRight,
   Send, Sparkles, Globe,
   Target, Eye, Navigation, ChevronLeft, ChevronRight,
-  Cpu, Leaf, Landmark, HeartPulse, Palette
+  Cpu, Leaf, Landmark, HeartPulse, Palette, Copy, CheckCircle
 } from 'lucide-react';
 import { 
   HashRouter as Router, 
@@ -299,6 +299,10 @@ const Navbar = ({ theme, setTheme }) => {
 // --- MAIN PAGES ---
 
 const Home = ({ theme }) => {
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailContent, setEmailContent] = useState("");
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [city, setCity] = useState('');
   const [results, setResults] = useState([]);
@@ -364,6 +368,38 @@ const Home = ({ theme }) => {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleGenerateEmail = async (company) => {
+    setIsGeneratingEmail(true);
+    setEmailContent("");
+    setShowEmailModal(true);
+    try {
+      const response = await fetch("http://localhost:8000/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company_name: company.name,
+          industry: company.industry,
+          contact_name: "Contact",
+          contact_title: "Lead",
+        })
+      });
+      if (!response.ok) throw new Error("Failed to generate email");
+      const data = await response.json();
+      setEmailContent(data.email);
+    } catch (err) {
+      console.error(err);
+      setEmailContent("Error generating email. Check the backend connection and Gemini API Key.");
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(emailContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const onSelectDomain = (domainName) => {
@@ -495,9 +531,17 @@ const Home = ({ theme }) => {
                 <a href={`https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-indigo-500 font-bold text-xs truncate max-w-[60%] hover:underline">
                   <Globe size={14} className="flex-shrink-0" /> {company.website}
                 </a>
-                <button className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest hover:gap-3 transition-all">
-                  View <ExternalLink size={14} />
-                </button>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => handleGenerateEmail(company)}
+                    className="text-purple-500 flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:gap-3 transition-all"
+                  >
+                    AI Email <Sparkles size={14} />
+                  </button>
+                  <button className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest hover:gap-3 transition-all">
+                    View <ExternalLink size={14} />
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -510,6 +554,54 @@ const Home = ({ theme }) => {
           <p className="text-3xl font-black">START YOUR SEARCH ABOVE</p>
         </div>
       )}
+
+      <AnimatePresence>
+        {showEmailModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className={`w-full max-w-2xl overflow-hidden rounded-[2rem] border shadow-2xl ${theme === 'reading' ? 'bg-[#fefaf0] border-[#e6dfcf] text-zinc-900' : 'bg-zinc-900 border-white/10 text-white'}`}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-black/10 dark:border-white/10">
+                <h3 className="text-xl font-black flex items-center gap-3">
+                  <Sparkles className="text-purple-500" /> AI Generated Outreach
+                </h3>
+                <button onClick={() => setShowEmailModal(false)} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 min-h-[300px]">
+                {isGeneratingEmail ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-6 text-purple-500 h-[300px]">
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+                      <Sparkles size={48} opacity={0.5} />
+                    </motion.div>
+                    <p className="font-bold tracking-widest uppercase text-sm animate-pulse">Drafting Email...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className={`p-6 rounded-2xl whitespace-pre-wrap font-medium leading-relaxed ${theme === 'reading' ? 'bg-white border border-[#e6dfcf]' : 'bg-black/20'}`}>
+                      {emailContent}
+                    </div>
+                    <div className="flex justify-end">
+                      <button onClick={copyToClipboard} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}`}>
+                        {copied ? <><CheckCircle size={18}/> Copied!</> : <><Copy size={18}/> Copy to Clipboard</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
