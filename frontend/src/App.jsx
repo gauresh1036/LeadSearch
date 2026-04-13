@@ -344,7 +344,7 @@ const Home = ({ theme }) => {
       const mapped = fetchedCompanies.map((c, idx) => ({
         id: c.company_name + idx,
         name: c.company_name,
-        email: c.contact_email,
+        email: c.email,
         color: colorPalettes[idx % colorPalettes.length]
       }));
       

@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # Apollo.io API config
-APOLLO_API_URL = "https://api.apollo.io/v1/mixed_people/search"
+APOLLO_API_URL = "https://api.apollo.io/v1/contacts/search"
 APOLLO_API_KEY = os.getenv("APOLLO_API_KEY", "")
 
 
@@ -42,8 +42,8 @@ async def search(
     location: str = Query(..., description="City or region name, e.g. 'San Francisco'"),
 ):
     """
-    Search Apollo.io for people/companies by industry and location.
-    Returns a simplified list with company name and contact details.
+    Search Apollo.io for contacts by industry and location.
+    Returns a simplified list with company name and email.
     """
 
     # --- Validate API key --------------------------------------------------
@@ -90,26 +90,15 @@ async def search(
 
     # --- Parse & simplify the response -------------------------------------
     data = response.json()
-    people = data.get("people", [])
+    contacts = data.get("contacts", [])
 
     results = []
-    for person in people:
-        org = person.get("organization", {}) or {}
+    for contact in contacts:
+        org = contact.get("organization", {}) or {}
         results.append(
             {
                 "company_name": org.get("name", "N/A"),
-                "industry": org.get("primary_industry") or industry,
-                "employee_count": org.get("estimated_num_employees", "N/A"),
-                "contact_name": person.get("name", "N/A"),
-                "contact_title": person.get("title", "N/A"),
-                "contact_email": person.get("email", "N/A"),
-                "contact_phone": (
-                    person.get("phone_numbers", [{}])[0].get("sanitized_number", "N/A")
-                    if person.get("phone_numbers")
-                    else "N/A"
-                ),
-                "company_website": org.get("website_url", "N/A"),
-                "linkedin_url": person.get("linkedin_url", "N/A"),
+                "email": contact.get("email", "N/A"),
             }
         )
 
