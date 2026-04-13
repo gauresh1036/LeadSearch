@@ -321,7 +321,13 @@ const Home = ({ theme }) => {
       });
       
       const response = await fetch(`http://localhost:8000/search?${params}`);
-      if (!response.ok) throw new Error("Apollo API Error");
+      
+      if (!response.ok) {
+        // Try to get detailed error from backend
+        const errorData = await response.json().catch(() => ({}));
+        const detail = errorData.detail || response.statusText;
+        throw new Error(`API Error (${response.status}): ${detail}`);
+      }
       
       const data = await response.json();
       const fetchedCompanies = data.results || [];
@@ -348,7 +354,11 @@ const Home = ({ theme }) => {
       setResults(mapped);
     } catch (err) {
       console.error(err);
-      alert("Failed to connect to Python backend! Is localhost:8000 running?");
+      if (err.message.includes("Failed to fetch")) {
+        alert("Failed to connect to Python backend! Please make sure the terminal shows 'Uvicorn running on http://0.0.0.0:8000'");
+      } else {
+        alert(err.message);
+      }
     } finally {
       setIsSearching(false);
     }
