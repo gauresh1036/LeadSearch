@@ -23,6 +23,7 @@ if os.getenv("GEMINI_API_KEY"):
 
 
 app = FastAPI(title="Apollo Company Search API")
+print("DEBUG: main.py is being loaded and app is initialized!")
 
 # ------------------------------------------------------------------
 # CORS – allow the React dev server (port 3000 / 5173) to call us
@@ -245,13 +246,23 @@ Keep it concise, polite, and engaging.
     try:
         if not gemini_client:
             raise Exception("Gemini client could not be initialized. Check API Key.")
+        
+        # Using gemini-1.5-flash as the fallback model
         response = gemini_client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=prompt
         )
         return {"email": response.text}
     except Exception as e:
-        print(f"Gemini API Error (fallback to demo email): {e}")
+        error_msg = str(e)
+        print(f"DEBUG: Gemini API Error details: {error_msg}")
+        
+        if "403" in error_msg and "leaked" in error_msg.lower():
+            print("CRITICAL: Your Gemini API Key has been reported as LEAKED and blocked by Google.")
+            print("Please visit https://aistudio.google.com/ to generate a NEW API Key.")
+        elif "404" in error_msg:
+            print("ERROR: Gemini model not found or unsupported. Check model name.")
+            
         fallback_email = f"""Subject: Brief Introduction: Accelerating {request.company_name}'s Goals
 
 Dear {request.contact_name},

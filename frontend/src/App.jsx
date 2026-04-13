@@ -324,7 +324,7 @@ const Home = ({ theme }) => {
         industry: searchTerm.trim()
       });
       
-      const response = await fetch(`http://localhost:8000/search?${params}`);
+      const response = await fetch(`http://localhost:8001/search?${params}`);
       
       if (!response.ok) {
         // Try to get detailed error from backend
@@ -375,7 +375,7 @@ const Home = ({ theme }) => {
     setEmailContent("");
     setShowEmailModal(true);
     try {
-      const response = await fetch("http://localhost:8000/generate-email", {
+      const response = await fetch("http://localhost:8001/generate-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
