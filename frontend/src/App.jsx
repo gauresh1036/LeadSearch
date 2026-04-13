@@ -344,7 +344,12 @@ const Home = ({ theme }) => {
       const mapped = fetchedCompanies.map((c, idx) => ({
         id: c.company_name + idx,
         name: c.company_name,
-        email: c.email,
+        location: c.location || "N/A",
+        industry: c.industry || "N/A",
+        employees: c.employees || "N/A",
+        website: c.website || "N/A",
+        founded: c.founded || "N/A",
+        description: c.description || "",
         color: colorPalettes[idx % colorPalettes.length]
       }));
       
@@ -438,28 +443,60 @@ const Home = ({ theme }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <AnimatePresence mode='popLayout'>
           {results.map(company => (
-            <motion.div key={company.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`p-8 rounded-[2.5rem] border ${theme === 'reading' ? 'bg-[#fefaf0] border-[#e6dfcf]' : 'bg-white/5 border-white/10 shadow-xl backdrop-blur-sm'}`}>
+            <motion.div key={company.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className={`p-8 rounded-[2.5rem] border group hover:scale-[1.02] transition-transform ${theme === 'reading' ? 'bg-[#fefaf0] border-[#e6dfcf]' : 'bg-white/5 border-white/10 shadow-xl backdrop-blur-sm hover:border-indigo-500/30'}`}>
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${company.color} mb-6 flex items-center justify-center text-white text-2xl font-black shadow-lg`}>
                 {company.name.charAt(0)}
               </div>
               
-              <h3 className="text-2xl font-black mb-4 tracking-tight uppercase">
+              <h3 className="text-2xl font-black mb-2 tracking-tight uppercase">
                 {company.name}
               </h3>
+
+              {company.description && (
+                <p className="text-sm opacity-50 mb-5 leading-relaxed">{company.description}</p>
+              )}
               
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
-                  <Mail className="text-indigo-500" size={20} />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+                  <MapPin className="text-indigo-500 flex-shrink-0" size={18} />
                   <div className="overflow-hidden">
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-0.5">Contact Email</p>
-                    <p className="font-bold text-sm truncate">{company.email && company.email !== 'N/A' ? company.email : "No Email Available"}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-0.5">Location</p>
+                    <p className="font-bold text-sm truncate">{company.location}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20">
+                  <Briefcase className="text-purple-500 flex-shrink-0" size={18} />
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-0.5">Industry</p>
+                    <p className="font-bold text-sm truncate">{company.industry}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                    <Users className="text-emerald-500 flex-shrink-0" size={16} />
+                    <div className="overflow-hidden">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Employees</p>
+                      <p className="font-bold text-xs truncate">{company.employees}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                    <Sparkles className="text-amber-500 flex-shrink-0" size={16} />
+                    <div className="overflow-hidden">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Founded</p>
+                      <p className="font-bold text-xs truncate">{company.founded}</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/5 flex justify-end">
+              <div className="mt-6 pt-5 border-t border-white/5 flex justify-between items-center">
+                <a href={`https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-indigo-500 font-bold text-xs truncate max-w-[60%] hover:underline">
+                  <Globe size={14} className="flex-shrink-0" /> {company.website}
+                </a>
                 <button className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest hover:gap-3 transition-all">
-                  View Profile <ExternalLink size={14} />
+                  View <ExternalLink size={14} />
                 </button>
               </div>
             </motion.div>
