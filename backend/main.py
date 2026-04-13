@@ -90,7 +90,10 @@ async def search(
 
     # --- Parse & simplify the response -------------------------------------
     data = response.json()
+    print(f"DEBUG: Apollo response keys: {list(data.keys())}")
+    
     contacts = data.get("contacts", [])
+    print(f"DEBUG: Number of contacts found: {len(contacts)}")
 
     results = []
     for contact in contacts:
