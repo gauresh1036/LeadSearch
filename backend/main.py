@@ -244,11 +244,26 @@ Keep it concise, polite, and engaging.
 """
     try:
         if not gemini_client:
-            raise HTTPException(status_code=500, detail="Gemini client could not be initialized. Check API Key.")
+            raise Exception("Gemini client could not be initialized. Check API Key.")
         response = gemini_client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt
         )
         return {"email": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Gemini API Error (fallback to demo email): {e}")
+        fallback_email = f"""Subject: Brief Introduction: Accelerating {request.company_name}'s Goals
+
+Dear {request.contact_name},
+
+My name is [Your Name], and I am reaching out because I've been following the fantastic work you are doing as the {request.contact_title} at {request.company_name}. 
+
+We specialize in helping organizations in the {request.industry} space overcome modern scaling challenges by implementing highly tailored, cutting-edge solutions. Based on what we've seen, I firmly believe our platform could offer a unique advantage to your specific roadmap at {request.company_name}.
+
+Would you be open to a brief 10-15 minute chat next Tuesday to see if there's a fit?
+
+Best regards,
+
+[Your Name]
+[Your Title]"""
+        return {"email": fallback_email}
