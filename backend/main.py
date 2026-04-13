@@ -10,9 +10,17 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from dotenv import load_dotenv
+from google import genai
+from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
+
+gemini_client = None
+if os.getenv("GEMINI_API_KEY"):
+    gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+
 
 app = FastAPI(title="Apollo Company Search API")
 
@@ -216,3 +224,31 @@ async def search(
     # --- Fallback: return curated demo data ----------------------------
     results = get_demo_companies(industry, location)
     return {"results": results, "total": len(results), "source": "demo"}
+
+class EmailRequest(BaseModel):
+    company_name: str
+    industry: str
+    contact_name: str
+    contact_title: str
+
+@app.post("/generate-email")
+async def generate_email(request: EmailRequest):
+    """Generates a custom email using Gemini API."""
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set.")
+    
+    prompt = f"""Write a short, professional outreach email to {request.contact_name}, who is the {request.contact_title} at {request.company_name} (Industry: {request.industry}).
+
+The goal of the email is to introduce our services and request a brief meeting.
+Keep it concise, polite, and engaging.
+"""
+    try:
+        if not gemini_client:
+            raise HTTPException(status_code=500, detail="Gemini client could not be initialized. Check API Key.")
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        return {"email": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
