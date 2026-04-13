@@ -344,10 +344,7 @@ const Home = ({ theme }) => {
       const mapped = fetchedCompanies.map((c, idx) => ({
         id: c.company_name + idx,
         name: c.company_name,
-        industry: c.industry && c.industry !== 'N/A' ? c.industry : searchTerm || 'Technology',
-        location: c.location || city || 'Global',
-        employees: c.employee_count && c.employee_count !== 'N/A' ? c.employee_count : "Unknown",
-        website: c.company_website && c.company_website !== 'N/A' ? c.company_website : "#",
+        email: c.contact_email,
         color: colorPalettes[idx % colorPalettes.length]
       }));
       
@@ -441,16 +438,29 @@ const Home = ({ theme }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <AnimatePresence mode='popLayout'>
           {results.map(company => (
-            <motion.div key={company.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`p-6 rounded-[2rem] border ${theme === 'reading' ? 'bg-[#fefaf0] border-[#e6dfcf]' : 'bg-white/5 border-white/10'}`}>
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${company.color} mb-6 flex items-center justify-center text-white text-2xl font-black`}>{company.name.charAt(0)}</div>
-              <h3 className="text-2xl font-bold mb-2">{company.name}</h3>
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-500 text-xs font-bold flex items-center gap-1"><Briefcase size={12} /> {company.industry}</span>
-                <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-500 text-xs font-bold flex items-center gap-1"><MapPin size={12} /> {company.location}</span>
+            <motion.div key={company.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`p-8 rounded-[2.5rem] border ${theme === 'reading' ? 'bg-[#fefaf0] border-[#e6dfcf]' : 'bg-white/5 border-white/10 shadow-xl backdrop-blur-sm'}`}>
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${company.color} mb-6 flex items-center justify-center text-white text-2xl font-black shadow-lg`}>
+                {company.name.charAt(0)}
               </div>
-              <div className="flex items-center justify-between pt-6 border-t border-black/5 dark:border-white/5">
-                <div className="text-sm font-medium opacity-60 flex items-center gap-1"><Users size={14} /> {company.employees}</div>
-                <div className="text-indigo-500 font-bold text-sm flex items-center gap-1 cursor-pointer">Profile <ExternalLink size={14} /></div>
+              
+              <h3 className="text-2xl font-black mb-4 tracking-tight uppercase">
+                {company.name}
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+                  <Mail className="text-indigo-500" size={20} />
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-0.5">Contact Email</p>
+                    <p className="font-bold text-sm truncate">{company.email && company.email !== 'N/A' ? company.email : "No Email Available"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/5 flex justify-end">
+                <button className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest hover:gap-3 transition-all">
+                  View Profile <ExternalLink size={14} />
+                </button>
               </div>
             </motion.div>
           ))}
